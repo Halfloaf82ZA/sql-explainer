@@ -1,6 +1,9 @@
 import os
+import sys
 from openai import AzureOpenAI
 from dotenv import load_dotenv
+
+sys.stdout.reconfigure(encoding="utf-8")
 
 load_dotenv()
 
