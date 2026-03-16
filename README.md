@@ -1,1 +1,1 @@
-# sql-explainer
+SQL Explainer
