@@ -1,9 +1,13 @@
 import os
-from openai import OpenAI
+from openai import AzureOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01"),
+)
 
 def ask_with_persona(
     system_prompt: str,
@@ -13,13 +17,17 @@ def ask_with_persona(
 ) -> str:
     """Call the LLM with a system prompt defining its role."""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ],
         temperature=temperature,
         max_tokens=max_tokens
+    )
+    print(
+        f"[cost] tokens={response.usage.total_tokens} | "
+        f"est_cost=${response.usage.total_tokens / 1_000_000 * 2.50:.6f}"
     )
     return response.choices[0].message.content
 
