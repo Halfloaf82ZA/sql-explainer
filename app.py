@@ -7,6 +7,8 @@ st.set_page_config(
     layout="wide"
 )
 
+MAX_SQL_CHARS = 4000
+
 st.title("🗄️ SQL Explainer")
 st.caption("Paste a SQL query. Get a plain-English explanation and optimisation suggestions.")
 
@@ -15,6 +17,12 @@ sql_input = st.text_area(
     height=200,
     placeholder="SELECT c.name, COUNT(o.id) FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name"
 )
+
+if sql_input:
+    st.caption(f"{len(sql_input)} characters | ~{len(sql_input) // 4} tokens estimated")
+
+if sql_input and len(sql_input) > MAX_SQL_CHARS:
+    st.warning(f"Query is {len(sql_input)} characters. Very long queries may produce incomplete explanations.")
 
 col1, col2 = st.columns(2)
 
@@ -32,6 +40,9 @@ if explain_clicked:
             result = explain_sql(sql_input)
         st.subheader("Explanation")
         st.markdown(result)
+        st.divider()
+        st.caption("Copy the explanation:")
+        st.code(result, language=None)
 
 if optimise_clicked:
     if not sql_input.strip():
@@ -41,3 +52,6 @@ if optimise_clicked:
             result = optimise_sql(sql_input)
         st.subheader("Optimisation Suggestions")
         st.markdown(result)
+        st.divider()
+        st.caption("Copy the suggestions:")
+        st.code(result, language=None)
