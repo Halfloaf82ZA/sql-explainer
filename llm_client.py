@@ -12,59 +12,61 @@ _client = AzureOpenAI(
 
 _DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 
-_SQL_EXPLAIN_SYSTEM = """You are a senior data engineer with deep SQL expertise.
-Explain SQL queries in plain English, structured as follows:
-
-1. **Purpose** — What does this query do in one sentence?
-2. **Clause breakdown** — Explain each clause (SELECT, FROM, JOIN, WHERE, GROUP BY, ORDER BY) separately.
-3. **Performance notes** — Flag any potential issues (missing indexes, SELECT *, large scans, etc.)
-4. **Dialect** — Identify the SQL dialect if possible (T-SQL, PostgreSQL, BigQuery, etc.)
-
-Use clear, simple language. Assume the reader is a business analyst, not a DBA."""
-
-_SQL_OPTIMISE_SYSTEM = """You are a senior data engineer specialising in query optimisation.
-Given a SQL query, suggest concrete improvements:
-
-1. **Indexing recommendations** — what indexes would help?
-2. **Rewrite suggestions** — is there a more efficient way to write this?
-3. **Potential issues** — identify any anti-patterns (SELECT *, implicit conversions, correlated subqueries, etc.)
-4. **Estimated impact** — rough assessment of improvement expected
-
-Be specific and actionable. Show rewritten SQL where applicable."""
-
-def explain_sql(sql_query: str) -> str:
-    """Explain a SQL query in plain English."""
+def explain_sql(sql_query: str, dialect: str = "Generic SQL") -> str:
+    """Explain a SQL query in plain English, with dialect-aware analysis."""
     if not sql_query.strip():
         return "No SQL query provided."
+    system_prompt = f"""You are a senior data engineer with deep expertise in {dialect}.
+
+Explain the provided SQL query in plain English.
+Break down each clause (SELECT, FROM, WHERE, JOIN, GROUP BY, HAVING, ORDER BY) separately.
+Use bullet points for each clause.
+Highlight any {dialect}-specific syntax or functions.
+Use simple language — the reader is a business analyst, not a DBA.
+Identify any potential performance concerns specific to {dialect}."""
     try:
         response = _client.chat.completions.create(
             model=_DEPLOYMENT,
             messages=[
-                {"role": "system", "content": _SQL_EXPLAIN_SYSTEM},
-                {"role": "user", "content": f"Explain this SQL query:\n\n{sql_query}"}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Explain this {dialect} query:\n\n{sql_query}"}
             ],
             temperature=0.2,
             max_tokens=1000
         )
-        return response.choices[0].message.content
+        result = response.choices[0].message.content
+        print(f"[cost] tokens={response.usage.total_tokens} | est_cost=${response.usage.total_tokens / 1_000_000 * 2.50:.6f}")
+        return result
     except Exception as e:
         return f"Error calling Azure OpenAI: {e}"
 
-def optimise_sql(sql_query: str) -> str:
-    """Suggest optimisations for a SQL query."""
+def optimise_sql(sql_query: str, dialect: str = "Generic SQL") -> str:
+    """Suggest optimisations for a SQL query, with dialect-aware suggestions."""
     if not sql_query.strip():
         return "No SQL query provided."
+    system_prompt = f"""You are a senior data engineer and query performance expert specialising in {dialect}.
+
+Analyse the provided SQL query for performance issues and suggest concrete improvements.
+For each suggestion:
+1. Explain the problem
+2. Explain why it matters in {dialect} specifically
+3. Provide the rewritten SQL where applicable
+
+Focus on: index usage, join order, predicate pushdown, unnecessary columns in SELECT, subquery vs CTE trade-offs.
+If the query looks well-optimised, say so explicitly."""
     try:
         response = _client.chat.completions.create(
             model=_DEPLOYMENT,
             messages=[
-                {"role": "system", "content": _SQL_OPTIMISE_SYSTEM},
-                {"role": "user", "content": f"Optimise this SQL query:\n\n{sql_query}"}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Optimise this {dialect} query:\n\n{sql_query}"}
             ],
             temperature=0.2,
             max_tokens=1000
         )
-        return response.choices[0].message.content
+        result = response.choices[0].message.content
+        print(f"[cost] tokens={response.usage.total_tokens} | est_cost=${response.usage.total_tokens / 1_000_000 * 2.50:.6f}")
+        return result
     except Exception as e:
         return f"Error calling Azure OpenAI: {e}"
 
