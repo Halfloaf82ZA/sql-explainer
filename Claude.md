@@ -28,15 +28,28 @@ Required env vars:
 
 ## File Structure
 sql-explainer/
-├── .env                  # secrets — never commit
+├── .env                    # secrets — never commit
+├── .env.example            # template for local setup
 ├── .gitignore
+├── .streamlit/
+│   └── secrets.toml        # Streamlit Cloud secrets (never commit)
 ├── requirements.txt
-├── llm_client.py         # Azure OpenAI calls only
-├── app.py                # Streamlit UI only
-└── README.md
+├── llm_client.py           # Azure OpenAI calls only
+├── app.py                  # Streamlit UI only
+├── SETUP_GUIDE.md          # local setup walkthrough
+├── README.md
+├── hello_streamlit.py      # scratch / learning file
+├── prompt_patterns.py      # prompt engineering experiments
+├── system_messages.py      # system prompt drafts
+├── test_azure.py           # manual Azure OpenAI connection test
+└── week3-llm-basics/       # course exercises — not part of the app
+
+## Auth & Rate Limiting
+- Password gate via `st.secrets["APP_PASSWORD"]` — set in `.streamlit/secrets.toml` locally and in Streamlit Cloud secrets for deployment
+- Session rate limit: 10 requests per session, enforced in `app.py`
 
 ## Behaviour Rules
-- Build features in this order: explain → optimise → copy button → dialect selector
+- All planned features are shipped: explain, optimise, dialect selector, copy button, password gate, rate limiting
 - Suggest the simplest implementation first
 - Don't add complexity until the core works
 - Production-ready code only — no throwaway snippets
